@@ -172,15 +172,16 @@ def evaluate_model(model, model_name, batch_size, revision, output_path, request
     if exit_code == 0:
         print("Command executed successfully.")
         submit_results(
-            model_name=args.model_name,
-            output_path=args.output_path,
+            model=model,
+            model_name=model_name,
+            output_path=output_path,
             request_file=request_file,
         )
     else:
         print(f"Command execution failed. Exit code: {exit_code}")
 
 
-def submit_results(model_name, output_path):
+def submit_results(model, model_name, output_path):
     def find_json_files(path):
         json_files = []
         for root, dirs, files in os.walk(path):
@@ -246,24 +247,25 @@ def submit_results(model_name, output_path):
             commit_message=f"Add {model_name} to results",
         )
 
-    with open(request_file) as f:
-        request = json.load(f)
+    if args.model == "huggingface" or args.model == "hf":
+        with open(request_file) as f:
+            request = json.load(f)
 
-    request["status"] = "FINISHED"
+        request["status"] = "FINISHED"
 
-    with open(request_file, "w") as f:
-        f.write(json.dumps(request))
+        with open(request_file, "w") as f:
+            f.write(json.dumps(request))
 
-    API.upload_file(
-        path_or_fileobj=request_file,
-        path_in_repo=request_file.split("eval-queue/")[1],
-        repo_id=QUEUE_REPO,
-        repo_type="dataset",
-        commit_message=f"FINISHED",
-    )
+        API.upload_file(
+            path_or_fileobj=request_file,
+            path_in_repo=request_file.split("eval-queue/")[1],
+            repo_id=QUEUE_REPO,
+            repo_type="dataset",
+            commit_message=f"FINISHED",
+        )
 
-    # Remove the local file
-    os.remove(request_file)
+        # Remove the local file
+        os.remove(request_file)
 
 
 if __name__ == "__main__":
@@ -328,14 +330,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    request_file = create_request_file(
-        model_name=args.model_name,
-        revision=args.revision,
-        precision=args.precision,
-        model_type=args.model_type,
-        weight_type=args.weight_type,
-        base_model=args.base_model,
-    )
+    request_file = ""
+    if args.model == "huggingface" or args.model == "hf":
+        request_file = create_request_file(
+            model_name=args.model_name,
+            revision=args.revision,
+            precision=args.precision,
+            model_type=args.model_type,
+            weight_type=args.weight_type,
+            base_model=args.base_model,
+        )
 
     evaluate_model(
         model=args.model,

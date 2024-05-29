@@ -181,7 +181,7 @@ def evaluate_model(model, model_name, batch_size, revision, output_path, request
         print(f"Command execution failed. Exit code: {exit_code}")
 
 
-def submit_results(model, model_name, output_path):
+def submit_results(model, model_name, output_path, request_file):
     def find_json_files(path):
         json_files = []
         for root, dirs, files in os.walk(path):
@@ -247,7 +247,7 @@ def submit_results(model, model_name, output_path):
             commit_message=f"Add {model_name} to results",
         )
 
-    if args.model == "huggingface" or args.model == "hf":
+    if model == "huggingface" or model == "hf":
         with open(request_file) as f:
             request = json.load(f)
 

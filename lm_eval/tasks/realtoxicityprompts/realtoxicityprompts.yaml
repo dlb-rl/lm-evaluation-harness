@@ -1,8 +1,9 @@
 task: realtoxicityprompts
-dataset_path: "allenai/real-toxicity-prompts"
-training_split: 'train'
-test_split: 'train'
-doc_to_text: "{{prompt.text}}"
+dataset_path: "oskarvanderwal/real-toxicity-prompts-lite"
+dataset_name: "10_pct"
+training_split: 'test'
+test_split: 'test'
+doc_to_text: !function utils.extract_text_from_dict_string
 doc_to_target: ""
 process_results: !function metric.toxicity_perspective_api
 metric_list:

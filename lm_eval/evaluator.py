@@ -5,7 +5,7 @@ import random
 import time
 from collections import defaultdict
 from typing import TYPE_CHECKING, List, Optional, Union
-
+from tqdm import tqdm
 import numpy as np
 import torch
 
@@ -438,6 +438,7 @@ def evaluate(
             for _ in range(padding_requests[reqtype]):
                 cloned_reqs.extend([req] * req.repeats)
 
+        eval_logger.info("-- Run requests through model --")
         # run requests through model
         resps = getattr(lm, reqtype)(cloned_reqs)
 
@@ -466,12 +467,19 @@ def evaluate(
         # Sort instances within each group
         for instances in instances_by_doc_id.values():
             instances.sort(key=lambda x: x.idx)
+        eval_logger.info("-- iterate over different filters used --")
         # iterate over different filters used
         for filter_key in task.instances[0].filtered_resps.keys():
             doc_iterator = task.doc_iterator(
                 rank=RANK, limit=limit, world_size=WORLD_SIZE
             )
-            for doc_id, doc in doc_iterator:
+            eval_logger.info("-- Processing Results --")
+            total_docs = len(task.eval_docs)
+            if limit is not None:
+                total_docs = min(total_docs, limit)
+            step_size = WORLD_SIZE if WORLD_SIZE > 1 else 1
+            total_docs = (total_docs + step_size - 1) // step_size  # Adjust total considering step size
+            for doc_id, doc in tqdm(doc_iterator, total=total_docs):
                 requests = instances_by_doc_id[doc_id]
                 metrics = task.process_results(
                     doc, [req.filtered_resps[filter_key] for req in requests]
